@@ -2,7 +2,7 @@
 
 ## Introduction
 
-This project represents my journey in developing an automated trading bot designed to interact with cryptocurrency exchanges through APIs. The bot aims to streamline processes by leveraging Python and the WOOX API to fetch market data, analyse trends, and execute trades automatically. The ultimate goal is to build a robust, scalable, and efficient system capable of supporting algorithmic trading strategies across various markets.
+This project represents my journey in developing an automated trading bot designed to interact with cryptocurrency exchanges through APIs. The bot aims to streamline processes by leveraging Python and the WOOX API to fetch market data, analyse trends, and execute trades automatically. The ultimate goal is to build a scalable, and efficient system capable of supporting algorithmic trading strategies across various markets.
 
 The bot operates based on the following components:
 
@@ -18,11 +18,11 @@ The bot operates based on the following components:
    - The bot evaluates conditions across multiple timeframes (1-hour, 15-minute, and 5-minute) to ensure robust entries.
    - Trades are exited when a 2.5% profit or loss is achieved.
 4. **Risk Management**:
-   - The maximum capital per trade is capped at $1000.
-   - Stop-loss levels are strictly enforced.
-5. **Notifications**:
+   - The max capital per trade is capped at $1000.
+   - Stoploss levels are strictly enforced.
+5. **Notifications**: (in progress)
    - Email alerts are sent upon executing a trade.
-6. **Logging and Analytics**:
+6. **Logging and Analytics**: 
    - Detailed logs are saved for performance review.
    - Graphs and reports summarise daily profit/loss and strategy performance.
 
@@ -309,84 +309,151 @@ import os
 import requests
 import hashlib
 import hmac
+import logging
+import matplotlib.pyplot as plt
 from dotenv import load_dotenv
 
+# load environment variables
 load_dotenv()
 API_KEY = os.getenv("WOOX_API_KEY")
 API_SECRET = os.getenv("WOOX_API_SECRET")
 
-# List of tokens
-tokens = [
-    "LDO", "POPCAT", "JTO", "CHZ", "TAO", "ATOM", "NEAR", "SUNDOG", "MEW",
-    "1000BONK", "BOME", "ID", "MOODENG", "BSV", "UXLINK", "SUIU", "LQTY",
-    "GOAT", "GMT", "WU", "MERL", "ZRX", "RSR", "ORDER", "BIGTIME", "CKB",
-    "ONDO", "WIF", "VET", "CRV"
-]
-symbols = [f"PERP_{token}_USDT" for token in tokens]
+# logging set up
+logging.basicConfig(level=logging.INFO, filename="trading_bot.log", filemode="a",
+                    format="%(asctime)s - %(levelname)s - %(message)s")
 
-# Fetch data for all tokens
-all_data = []
-start_time = str(int((time.time() - 180 * 24 * 60 * 60) * 1000))  # 180 days ago
-end_time = str(int(time.time() * 1000))  # Current timestamp
+plt.style.use("dark_background")
 
-def fetch_trade_history(symbol, start_time, end_time, page=1, size=100):
-    base_url = "https://api.woox.io/v1/client/trades"
+# fetch candle data
+def fetch_candles(symbol, interval, limit=500):
+    """
+    Fetch historical candle data from WOOX API.
+    """
+    base_url = "https://api.woox.io/v1/market/candles"
+    timestamp = str(int(time.time() * 1000))
     query_params = {
         "symbol": symbol,
-        "start_t": start_time,
-        "end_t": end_time,
-        "page": page,
-        "size": size
+        "timeframe": interval,
+        "limit": limit
     }
-    query_string = "&".join(f"{key}={value}" for key, value in sorted(query_params.items()))
-    timestamp = str(int(time.time() * 1000))
-    content_to_sign = f"{query_string}|{timestamp}"
-    signature = hmac.new(
-        API_SECRET.encode('utf-8'),
-        content_to_sign.encode('utf-8'),
-        hashlib.sha256
-    ).hexdigest()
+    query_string = "&".join(f"{key}={value}" for key, value in query_params.items())
+    signature_payload = f"{query_string}|{timestamp}".encode("utf-8")
+    signature = hmac.new(API_SECRET.encode("utf-8"), signature_payload, hashlib.sha256).hexdigest()
+    
     headers = {
         "x-api-key": API_KEY,
         "x-api-signature": signature,
         "x-api-timestamp": timestamp,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
     }
+    
     response = requests.get(base_url, headers=headers, params=query_params)
     if response.status_code == 200:
-        return response.json()
+        data = response.json()
+        if "rows" in data and data["rows"]:
+            df = pd.DataFrame(data["rows"], columns=["timestamp", "open", "high", "low", "close", "volume"])
+            df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+            return df
+        else:
+            logging.warning(f"No data returned for {symbol} with interval {interval}.")
+            return None
     else:
-        print(f"Failed to fetch data for {symbol}. Status code: {response.status_code}")
+        logging.error(f"Failed to fetch candles for {symbol} with interval {interval}. HTTP Status: {response.status_code}")
         return None
 
-for symbol in symbols:
-    print(f"Fetching data for {symbol}...")
-    current_page = 1
-    token_data = []
-    while True:
-        result = fetch_trade_history(symbol, start_time, end_time, page=current_page, size=100)
-        if result and result.get("rows"):
-            token_data.extend(result["rows"])
-            current_page += 1
-            if len(result["rows"]) < 100:  # No more pages
-                break
-        else:
-            break
-    if token_data:
-        all_data.extend(token_data)
-        # Save token-specific data
-        df_token = pd.DataFrame(token_data)
-        df_token.to_csv(f"{symbol}_trade_history.csv", index=False)
-        print(f"Saved data for {symbol} to {symbol}_trade_history.csv.")
+# stochastic rsi calculation
+def stochastic_rsi(data, k_period=3, d_period=3, rsi_length=14, stochastic_length=14, column="close"):
+    """
+    Calculate the Stochastic RSI indicator.
+    """
+    delta = data[column].diff()
+    gain = delta.where(delta > 0, 0).rolling(window=rsi_length).mean()
+    loss = -delta.where(delta < 0, 0).rolling(window=rsi_length).mean()
+    rs = gain / loss
+    data["rsi"] = 100 - (100 / (1 + rs))
 
-# Save all combined data
-if all_data:
-    df_all = pd.DataFrame(all_data)
-    df_all.to_csv("all_trade_history.csv", index=False)
-    print("Saved all token data to all_trade_history.csv.")
-else:
-    print("No data retrieved for any tokens.")
-```
+    rsi_min = data["rsi"].rolling(window=stochastic_length).min()
+    rsi_max = data["rsi"].rolling(window=stochastic_length).max()
+    data["stoch_rsi"] = (data["rsi"] - rsi_min) / (rsi_max - rsi_min)
+    data["k"] = data["stoch_rsi"].rolling(window=k_period).mean()
+    data["d"] = data["k"].rolling(window=d_period).mean()
+
+    return data
+
+# entry logic
+def check_entry_conditions(candles_1h, candles_15m, candles_5m):
+    """
+    Check if all conditions for entering a trade are met.
+    """
+    try:
+        if candles_1h["k"].iloc[-1] < 20 and candles_15m["k"].iloc[-1] < 20 and candles_5m["k"].iloc[-1] < 20:
+            return True
+    except Exception as e:
+        logging.error(f"Error checking entry conditions: {e}")
+    return False
+
+# execute trade (simulated for now)
+def execute_trade(symbol, side, amount):
+    """
+    Simulate executing a trade (to be replaced with actual trading logic).
+    """
+    logging.info(f"Executing trade: {side} {amount} {symbol}")
+    print(f"Trade executed: {side} {amount} {symbol}")
+
+# todays volume
+def plot_today_token_volume(df_all):
+    """
+    Plot today's token volume (total volume) by hour.
+    """
+    today = pd.Timestamp("now").normalize()
+    df_today = df_all[df_all["timestamp"].dt.date == today.date()]
+    
+    if df_today.empty:
+        logging.warning("No data available for today's date.")
+        return
+    
+    df_today["hour"] = df_today["timestamp"].dt.hour
+    hourly_volume = df_today.groupby("hour")["volume"].sum()
+    
+    plt.figure(figsize=(10, 6))
+    plt.plot(hourly_volume.index, hourly_volume.values, marker="o", linestyle="-", color="magenta")
+    plt.title("Today's Token Volume by Hour")
+    plt.xlabel("Hour")
+    plt.ylabel("Total Token Volume")
+    plt.grid()
+    plt.savefig("todays_token_volume.png")
+    plt.show()
+    logging.info("Today's token volume graph saved as todays_token_volume.png.")
+
+# run bot!!! :D
+def run_bot():
+    symbol = "PERP_LDO_USDT"  # replace with any token
+    candles_1h = fetch_candles(symbol, "1h")
+    candles_15m = fetch_candles(symbol, "15m")
+    candles_5m = fetch_candles(symbol, "5m")
+
+    if candles_1h is None or candles_15m is None or candles_5m is None:
+        logging.warning("Skipping trading due to missing data.")
+        return
+    
+    # calculate stoch rsi
+    candles_1h = stochastic_rsi(candles_1h)
+    candles_15m = stochastic_rsi(candles_15m)
+    candles_5m = stochastic_rsi(candles_5m)
+
+    # check entry conditions and execute!!
+    if check_entry_conditions(candles_1h, candles_15m, candles_5m):
+        execute_trade(symbol, "BUY", 1000)
+    else:
+        logging.info("No entry conditions met.")
+
+    # plot todays volume
+    df_all = pd.concat([candles_1h, candles_15m, candles_5m], ignore_index=True)
+    plot_today_volume(df_all)
+
+if __name__ == "__main__":
+    run_bot()
+
 
 ### Significance:
 This step enables the trading bot to:
