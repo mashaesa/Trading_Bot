@@ -30,8 +30,6 @@ The bot operates based on the following key components:
 
 ## Technical Deep Dive
 
-# Trading Bot: Technical Overview
-
 This document provides a deep dive into the data science concepts, programming tools, and overall architecture of the trading bot.
 
 ### Strategy Details
@@ -138,7 +136,7 @@ The core language for this project due to its:
 
 ---
 
-## Architectural Design
+## Design
 
 ### Workflow
 1. **Data Retrieval**:
@@ -162,7 +160,7 @@ The core language for this project due to its:
 
 ---
 
-## Development Milestones
+## Milestones
 
 1. **Secure API Integration**:
    - HMAC-SHA256 signatures ensure secure and authenticated API calls.
@@ -239,8 +237,6 @@ The core language for this project due to its:
 
 ### Code Use in Bot Development
 
-### Overview
-
 #### Purpose of the Code:
 The script demonstrates the process of securely fetching trade history from a cryptocurrency exchange using its API. It includes:
 1. **Environment Configuration:** Securely loading API keys from a `.env` file.
@@ -280,21 +276,19 @@ Response Content: {
 }
 ```
 
-#### Parsed Output (Sample Rows):
+#### Output (Sample Rows):
 | Trade ID     | Symbol          | Side | Executed Price | Quantity | Fee   | Fee Asset |
 |--------------|-----------------|------|----------------|----------|-------|-----------|
 | 1391018966  | PERP_POWR_USDT  | SELL | 0.3405         | 710      | 0.120 | USDT      |
 | 1391018965  | PERP_POWR_USDT  | SELL | 0.3406         | 856      | 0.145 | USDT      |
 | 1391018964  | PERP_POWR_USDT  | SELL | 0.3406         | 3506     | 0.597 | USDT      |
 
-### Explanation:
 1. **Request Debugging:** Debugging information ensures the request is constructed correctly and helps trace issues.
 2. **Response Content:** The JSON response includes metadata (e.g., total records and pagination) and trade data such as executed price, quantity, and fees.
 3. **Parsed Data:** The parsed table highlights key fields, making it easier to visualise the trade history.
 
 ### Significant Milestone: Fetching Data for Multiple Tokens
 
-#### Description:
 Building upon the initial functionality, the project has been extended to:
 1. Retrieve historical trade data for multiple cryptocurrency tokens dynamically.
 2. Save the trade data for each token in a separate `.csv` file.
@@ -302,12 +296,12 @@ Building upon the initial functionality, the project has been extended to:
 
 This implementation demonstrates scalability and prepares the system for broader market analysis and strategy development.
 
-#### Key Features of the Code:
+#### Features of the Code:
 - **Dynamic Token Handling:** Automatically fetches data for a list of predefined tokens.
 - **Pagination:** Retrieves complete historical data by iterating through multiple pages of API responses.
 - **Export to CSV:** Exports both individual token data and aggregated data for easy analysis.
 
-#### Code Preview:
+#### Preview:
 ```python
 import time
 import pandas as pd
