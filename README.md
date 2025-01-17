@@ -261,14 +261,7 @@ The core language for this project due to its:
 
 ### Code Use in Bot Development
 
-The current code is foundational for:
-- **Data Retrieval:** The `fetch_trade_history` function provides access to historical trading data, which is essential for backtesting strategies and understanding market behaviour.
-- **Authentication Workflow:** The implementation of secure API authentication sets the groundwork for other bot functionalities, such as placing orders or monitoring account balances.
-- **Scalable Design:** Modular functions make it easy to expand and integrate additional features like real-time data fetching, order placement, and portfolio management.
-
-## Code Demonstration and Output
-
-### Code Overview
+### Overview
 
 #### Purpose of the Code:
 The script demonstrates the process of securely fetching trade history from a cryptocurrency exchange using its API. It includes:
