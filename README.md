@@ -34,8 +34,42 @@ The bot operates based on the following key components:
 
 This document provides a deep dive into the data science concepts, programming tools, and overall architecture of the trading bot.
 
+### Strategy Details
+
+1. **Trading Style:**
+   - Day trading with a focus on cryptocurrencies.
+
+2. **Indicators & Technical Analysis:**
+   - **Candlestick Patterns:** Used as part of trade confirmation.
+   - **Stochastic RSI:** Multiple settings for fine-tuned analysis:
+     - K: 3, D: 3, RSI Length: 5, Stochastic Length: 5.
+     - K: 3, D: 3, RSI Length: 8, Stochastic Length: 8.
+   - **Slow Stochastics:**
+     - SmoothK: 14, SmoothD: 3.
+     - SmoothK: 8, SmoothD: 3.
+   - **Supertrend Indicator:**
+     - ATR Period: 11, Source: HL2, ATR Multiplier: 2, Timeframe: Chart.
+   - **Moving Averages:**
+     - Exponential Moving Averages (EMAs): 11, 26, 100, 200, 300, 400.
+     - Standard Moving Averages (MAs): 25, 39, 50, 200.
+
+3. **Entry & Exit Criteria:**
+   - **Entry Trigger:**
+     - Hourly chart: All Stochastic RSI and Slow Stochastics align at 20.
+     - 15-minute and 5-minute charts: Same alignment.
+     - Confirmation: A green candle closes on the 5-minute chart after alignment.
+   - **Exit Trigger:**
+     - Trade achieves a 2.5% profit or incurs a 2.5% loss.
+
+4. **Risk Management:**
+   - Maximum capital per trade: $1,000.
+   - Risk-to-reward ratio: 2.5% stop-loss and profit target.
+
+5. **Timeframe and Trading Hours:**
+   - Timeframes: 1-hour, 15-minute, and 5-minute charts.
+   - Trading frequency: One trade per day.
+
 ---
-### Strategy
 
 ### 1. Stochastic RSI
 The **Stochastic RSI** combines the relative strength index (RSI) and stochastic oscillator to identify overbought and oversold conditions:
@@ -161,42 +195,7 @@ The core language for this project due to its:
    - Included exception handling to manage HTTP request errors gracefully.
 ## Strategy and Implementation Plan
 
-### Strategy Details
-
-1. **Trading Style:**
-   - Day trading with a focus on cryptocurrencies.
-
-2. **Indicators & Technical Analysis:**
-   - **Candlestick Patterns:** Used as part of trade confirmation.
-   - **Stochastic RSI:** Multiple settings for fine-tuned analysis:
-     - K: 3, D: 3, RSI Length: 5, Stochastic Length: 5.
-     - K: 3, D: 3, RSI Length: 8, Stochastic Length: 8.
-   - **Slow Stochastics:**
-     - SmoothK: 14, SmoothD: 3.
-     - SmoothK: 8, SmoothD: 3.
-   - **Supertrend Indicator:**
-     - ATR Period: 11, Source: HL2, ATR Multiplier: 2, Timeframe: Chart.
-   - **Moving Averages:**
-     - Exponential Moving Averages (EMAs): 11, 26, 100, 200, 300, 400.
-     - Standard Moving Averages (MAs): 25, 39, 50, 200.
-
-3. **Entry & Exit Criteria:**
-   - **Entry Trigger:**
-     - Hourly chart: All Stochastic RSI and Slow Stochastics align at 20.
-     - 15-minute and 5-minute charts: Same alignment.
-     - Confirmation: A green candle closes on the 5-minute chart after alignment.
-   - **Exit Trigger:**
-     - Trade achieves a 2.5% profit or incurs a 2.5% loss.
-
-4. **Risk Management:**
-   - Maximum capital per trade: $1,000.
-   - Risk-to-reward ratio: 2.5% stop-loss and profit target.
-
-5. **Timeframe and Trading Hours:**
-   - Timeframes: 1-hour, 15-minute, and 5-minute charts.
-   - Trading frequency: One trade per day.
-
-### Automation Preferences
+### Automation
 
 1. **Exchange Integration:**
    - Platform: WOOX exchange.
@@ -205,7 +204,7 @@ The core language for this project due to its:
 2. **Backtesting and Alerts:**
    - Historical data: Past one year with 1-hour, 15-minute, 5-minute, and 30-minute intervals.
 
-3. **Hosting & Deployment:**
+3. **Hosting & Deployment:** (in progress)
    - Platform: Azure, with Docker for containerisation.
    - Deployment region: US-East or Europe for optimal latency.
 
@@ -213,20 +212,7 @@ The core language for this project due to its:
    - Logs: CSV format.
    - Analytics: Daily profit/loss summaries and performance reports visualised with Matplotlib and Plotly.
 
-### Technical Enhancements
-
-1. **Machine Learning Integration:**
-   - Use cases: Price trend prediction and volatility analysis.
-   - Libraries: TensorFlow, PyTorch, or Scikit-learn (as appropriate).
-
-2. **Database Setup:**
-   - Database: PostgreSQL for scalability.
-   - Tables: Trade history, backtesting results, and performance logs.
-
-3. **Additional Tools:**
-   - Integration with TradingView alerts and Neo4j for relationship mapping.
-
-### Implementation Plan
+### The Plan
 
 1. **Trading Logic:**
    - Encode trade entry conditions (stochastic RSI and slow stochastic alignment).
@@ -251,8 +237,6 @@ The core language for this project due to its:
 7. **Machine Learning:**
    - Build predictive models for trend and volatility analysis.
    - Generate datasets from historical trades for training and testing.
-
-This section outlines the systematic approach to developing a highly functional trading bot, incorporating advanced analytics and automation for market behaviour learning and optimisation.
 
 ## Current Progress
 
@@ -472,34 +456,31 @@ This step enables the trading bot to:
 
 ## Next Steps
 
-1. **Enhance API Functionality:**
+**Enhance API Functionality:**
    - Add support for fetching live market data and placing trades.
    - Implement features to handle multiple currency pairs dynamically.
 
-2. **Integrate Strategy Logic:**
-   - Begin incorporating simple trading strategies for backtesting using the fetched data.
-
-3. **Optimise Performance:**
+**Optimise Performance:**
    - Reduce latency in API calls and improve error handling.
 
-4. **Documentation and Testing:**
+**Documentation and Testing:**
    - Document the API workflow and write unit tests to ensure code reliability.
 
-5. **Advanced Backtesting**:
+**Advanced Backtesting**:
    - Use historical data to simulate and refine trading strategies.
    - Evaluate win/loss ratios and strategy performance metrics.
 
-6. **Real-Time Trading**:
+**Real-Time Trading**:
    - Transition from historical analysis to live trading using WebSocket integrations.
 
-7. **Machine Learning**:
+**Machine Learning**:
    - Introduce trend prediction and volatility analysis models.
    - Explore reinforcement learning for adaptive strategies.
 
-8. **Scalable Deployment**:
+**Scalable Deployment**:
    - Deploy on Azure with Docker for reliability and low latency.
 
-9. **Database Integration**:
+**Database Integration**:
    - Implement PostgreSQL to store trade history, backtesting results, and performance logs.
    - Use Neo4j to map relationships between indicators and trade outcomes.
 
