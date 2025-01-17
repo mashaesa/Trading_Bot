@@ -311,23 +311,35 @@ import hashlib
 import hmac
 import logging
 import matplotlib.pyplot as plt
+import psycopg2
+from psycopg2.extras import execute_values
 from dotenv import load_dotenv
+import asyncio
+import aiohttp
 
-# load environment variables
+# Load environment variables
 load_dotenv()
 API_KEY = os.getenv("WOOX_API_KEY")
 API_SECRET = os.getenv("WOOX_API_SECRET")
+DB_CONNECTION = os.getenv("DB_CONNECTION")
 
-# logging set up
+# Set logging
 logging.basicConfig(level=logging.INFO, filename="trading_bot.log", filemode="a",
                     format="%(asctime)s - %(levelname)s - %(message)s")
 
 plt.style.use("dark_background")
 
-# fetch candle data
-def fetch_candles(symbol, interval, limit=500):
+# Database connection setup
+def connect_to_db():
     """
-    Fetch historical candle data from WOOX API.
+    Establish connection to PostgreSQL database.
+    """
+    return psycopg2.connect(DB_CONNECTION)
+
+# Asynch fetch for candle data
+async def fetch_candles_async(symbol, interval, limit=500):
+    """
+    Asynchronously fetch historical candle data from WOOX API.
     """
     base_url = "https://api.woox.io/v1/market/candles"
     timestamp = str(int(time.time() * 1000))
@@ -339,29 +351,61 @@ def fetch_candles(symbol, interval, limit=500):
     query_string = "&".join(f"{key}={value}" for key, value in query_params.items())
     signature_payload = f"{query_string}|{timestamp}".encode("utf-8")
     signature = hmac.new(API_SECRET.encode("utf-8"), signature_payload, hashlib.sha256).hexdigest()
-    
+
     headers = {
         "x-api-key": API_KEY,
         "x-api-signature": signature,
         "x-api-timestamp": timestamp,
         "Content-Type": "application/json",
     }
-    
-    response = requests.get(base_url, headers=headers, params=query_params)
-    if response.status_code == 200:
-        data = response.json()
-        if "rows" in data and data["rows"]:
-            df = pd.DataFrame(data["rows"], columns=["timestamp", "open", "high", "low", "close", "volume"])
-            df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
-            return df
-        else:
-            logging.warning(f"No data returned for {symbol} with interval {interval}.")
-            return None
-    else:
-        logging.error(f"Failed to fetch candles for {symbol} with interval {interval}. HTTP Status: {response.status_code}")
-        return None
 
-# stochastic rsi calculation
+    async with aiohttp.ClientSession() as session:
+        async with session.get(base_url, headers=headers, params=query_params) as response:
+            if response.status == 200:
+                data = await response.json()
+                if "rows" in data and data["rows"]:
+                    df = pd.DataFrame(data["rows"], columns=["timestamp", "open", "high", "low", "close", "volume"])
+                    df["timestamp"] = pd.to_datetime(df["timestamp"], unit="ms")
+                    return df
+                else:
+                    logging.warning(f"No data returned for {symbol} with interval {interval}.")
+                    return None
+            else:
+                logging.error(f"Failed to fetch candles for {symbol} with interval {interval}. HTTP Status: {response.status}")
+                return None
+
+
+# Save data to PostgreSQL
+def save_to_database(data, table_name):
+    """
+    Save DataFrame to PostgreSQL.
+    """
+    try:
+        conn = connect_to_db()
+        cursor = conn.cursor()
+
+        cursor.execute(f"""
+        CREATE TABLE IF NOT EXISTS {table_name} (
+            timestamp TIMESTAMP,
+            open FLOAT,
+            high FLOAT,
+            low FLOAT,
+            close FLOAT,
+            volume FLOAT
+        )""")
+
+        execute_values(cursor, f"INSERT INTO {table_name} (timestamp, open, high, low, close, volume) VALUES %s",
+                       data.values.tolist())
+        conn.commit()
+        logging.info(f"Data saved to table {table_name}.")
+    except Exception as e:
+        logging.error(f"Failed to save data to database: {e}")
+    finally:
+        cursor.close()
+        conn.close()
+
+
+# Stoch RSI calculation :)
 def stochastic_rsi(data, k_period=3, d_period=3, rsi_length=14, stochastic_length=14, column="close"):
     """
     Calculate the Stochastic RSI indicator.
@@ -380,41 +424,47 @@ def stochastic_rsi(data, k_period=3, d_period=3, rsi_length=14, stochastic_lengt
 
     return data
 
-# entry logic
-def check_entry_conditions(candles_1h, candles_15m, candles_5m):
-    """
-    Check if all conditions for entering a trade are met.
-    """
-    try:
-        if candles_1h["k"].iloc[-1] < 20 and candles_15m["k"].iloc[-1] < 20 and candles_5m["k"].iloc[-1] < 20:
-            return True
-    except Exception as e:
-        logging.error(f"Error checking entry conditions: {e}")
-    return False
 
-# execute trade (simulated for now)
-def execute_trade(symbol, side, amount):
+# Backtesting 
+def backtest_strategy(data, entry_threshold=20, exit_threshold=80):
     """
-    Simulate executing a trade (to be replaced with actual trading logic).
+    Simple backtesting logic using Stochastic RSI.
     """
-    logging.info(f"Executing trade: {side} {amount} {symbol}")
-    print(f"Trade executed: {side} {amount} {symbol}")
+    data = stochastic_rsi(data)
+    balance = 1000  # Starting balance (USDT)
+    position = 0    # Position size
 
-# todays volume
-def plot_today_token_volume(df_all):
+    for i in range(1, len(data)):
+        if data["k"].iloc[i] < entry_threshold and position == 0:
+            # Enter position
+            position = balance / data["close"].iloc[i]
+            balance = 0
+            logging.info(f"Entered position at {data['close'].iloc[i]} on {data['timestamp'].iloc[i]}.")
+
+        elif data["k"].iloc[i] > exit_threshold and position > 0:
+            # Exit position
+            balance = position * data["close"].iloc[i]
+            position = 0
+            logging.info(f"Exited position at {data['close'].iloc[i]} on {data['timestamp'].iloc[i]}.")
+
+    return balance
+
+
+# Plot daily token volume
+def plot_today_token_volume(data):
     """
-    Plot today's token volume (total volume) by hour.
+    Plot today's token volume by hour.
     """
     today = pd.Timestamp("now").normalize()
-    df_today = df_all[df_all["timestamp"].dt.date == today.date()]
-    
-    if df_today.empty:
+    data_today = data[data["timestamp"].dt.date == today.date()]
+
+    if data_today.empty:
         logging.warning("No data available for today's date.")
         return
-    
-    df_today["hour"] = df_today["timestamp"].dt.hour
-    hourly_volume = df_today.groupby("hour")["volume"].sum()
-    
+
+    data_today["hour"] = data_today["timestamp"].dt.hour
+    hourly_volume = data_today.groupby("hour")["volume"].sum()
+
     plt.figure(figsize=(10, 6))
     plt.plot(hourly_volume.index, hourly_volume.values, marker="o", linestyle="-", color="magenta")
     plt.title("Today's Token Volume by Hour")
@@ -425,35 +475,28 @@ def plot_today_token_volume(df_all):
     plt.show()
     logging.info("Today's token volume graph saved as todays_token_volume.png.")
 
-# run bot!!! :D
-def run_bot():
-    symbol = "PERP_LDO_USDT"  # replace with any token
-    candles_1h = fetch_candles(symbol, "1h")
-    candles_15m = fetch_candles(symbol, "15m")
-    candles_5m = fetch_candles(symbol, "5m")
 
-    if candles_1h is None or candles_15m is None or candles_5m is None:
-        logging.warning("Skipping trading due to missing data.")
-        return
-    
-    # calculate stoch rsi
-    candles_1h = stochastic_rsi(candles_1h)
-    candles_15m = stochastic_rsi(candles_15m)
-    candles_5m = stochastic_rsi(candles_5m)
+# Bot logic
+async def run_bot():
+    symbols = ["PERP_LDO_USDT", "PERP_ATOM_USDT"]  
+    interval = "1h"
+    all_results = []
 
-    # check entry conditions and execute!!
-    if check_entry_conditions(candles_1h, candles_15m, candles_5m):
-        execute_trade(symbol, "BUY", 1000)
-    else:
-        logging.info("No entry conditions met.")
+    for symbol in symbols:
+        candles = await fetch_candles_async(symbol, interval)
+        if candles is not None:
+            save_to_database(candles, symbol.replace("PERP_", ""))
+            final_balance = backtest_strategy(candles)
+            logging.info(f"Final balance after backtesting {symbol}: ${final_balance:.2f}")
+            all_results.append((symbol, final_balance))
+            plot_today_token_volume(candles)
+    for symbol, balance in all_results:
+        print(f"Symbol: {symbol}, Final Balance: ${balance:.2f}")
 
-    # plot todays volume
-    df_all = pd.concat([candles_1h, candles_15m, candles_5m], ignore_index=True)
-    plot_today_volume(df_all)
 
 if __name__ == "__main__":
-    run_bot()
-
+    asyncio.run(run_bot())
+```
 
 ### Significance:
 This step enables the trading bot to:
