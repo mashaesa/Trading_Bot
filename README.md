@@ -173,28 +173,6 @@ The core language for this project due to its:
 
 ---
 
-## Current Progress
-
-### Functionality Implemented:
-
-1. **Environment Configuration:**
-   - Utilised the `dotenv` library to securely manage API keys and secrets in a `.env` file, ensuring sensitive information is not exposed in the codebase.
-
-2. **Timestamp Generation:**
-   - Created a function to generate a 13-digit Unix timestamp (in milliseconds) for API request signing and synchronisation with the exchange server.
-
-3. **HMAC-SHA256 Signature Creation:**
-   - Developed a function to generate secure signatures using the API secret, ensuring integrity and authenticity of API requests.
-
-4. **Fetching Trade History:**
-   - Implemented an API call to fetch historical trade data from the exchange for a specified time range.
-   - Integrated query parameter construction, signature generation, and HTTP headers setup to comply with the exchange’s API requirements.
-
-5. **Debugging and Error Handling:**
-   - Added print statements to debug the request flow (e.g., query strings, headers, and signature details).
-   - Included exception handling to manage HTTP request errors gracefully.
-## Strategy and Implementation Plan
-
 ### Automation
 
 1. **Exchange Integration:**
@@ -422,7 +400,7 @@ This step enables the trading bot to:
 2. Use the exported data for advanced strategy development.
 3. Prepare for scalability by handling large datasets and multiple markets efficiently.
 
-### Next Steps:
+### Next Up:
 1. Analyse the exported data for trends and correlations.
 2. Incorporate technical indicators to evaluate market conditions.
 3. Optimise the data-fetching process for better performance and reliability.
