@@ -26,39 +26,116 @@ The bot operates based on the following key components:
    - Detailed logs are saved for performance review.
    - Graphs and reports summarise daily profit/loss and strategy performance.
 
+---
+
 ## Technical Deep Dive
 
-To understand the in-depth technical implementation, the tools and libraries used, and the data science concepts behind the bot, visit:
+# Trading Bot: Technical Overview
 
-👉 [Technical Overview](technical_overview/README.md)
+This document provides a deep dive into the data science concepts, programming tools, and overall architecture of the trading bot.
+
+---
+### Strategy
+
+### 1. Stochastic RSI
+The **Stochastic RSI** combines the relative strength index (RSI) and stochastic oscillator to identify overbought and oversold conditions:
+- **Purpose**: Detect momentum shifts in price action.
+- **Implementation**:
+  - Calculate RSI over a defined period.
+  - Identify the highest and lowest RSI values within a rolling window.
+  - Compute the stochastic oscillator of the RSI values.
+
+### 2. Slow Stochastic
+The **Slow Stochastic** smooths the regular stochastic oscillator:
+- **Purpose**: Mitigate noise and provide clearer trend signals.
+- **Implementation**:
+  - Smooth `%K` (raw stochastic) with a simple moving average.
+  - Smooth `%D` (signal line) over a shorter period.
+
+### 3. Supertrend Indicator
+The **Supertrend Indicator** highlights market trends based on average true range (ATR):
+- **Purpose**: Identify potential trend reversals.
+- **Implementation**:
+  - Compute ATR for price volatility.
+  - Create upper and lower bands based on ATR and price movement.
+
+### 4. Moving Averages (MA & EMA)
+- **Moving Averages (MA)** smooth historical prices over a defined window to reduce noise.
+- **Exponential Moving Averages (EMA)** assign greater weight to recent prices to react faster to price changes.
 
 ---
 
-## Future Plans
+## Programming Tools and Libraries
 
-I plan to evolve this bot in the following ways:
+### 1. Python
+The core language for this project due to its:
+- Robust libraries for data manipulation (e.g., Pandas).
+- Ease of integrating APIs.
+- Extensive community support for algorithmic trading.
 
-1. **Backtesting and Optimisation**:
-   - Integrate a robust backtesting framework to test the strategy on historical data.
-   - Fine-tune the parameters of indicators to optimise performance.
+### 2. Libraries Used
+#### a. **Pandas**
+- **Purpose**: Data manipulation and analysis.
+- **Use Cases**:
+  - Cleaning and structuring API response data.
+  - Calculating technical indicators.
 
-2. **Machine Learning**:
-   - Introduce predictive models using TensorFlow to analyse trends and improve decision-making.
-   - Explore reinforcement learning for dynamic strategy adaptation.
+#### b. **Matplotlib**
+- **Purpose**: Data visualisation.
+- **Use Cases**:
+  - Plotting profit/loss summaries.
+  - Visualising trade history and market trends.
 
-3. **Hosting**:
-   - Deploy the bot on Azure using Docker for scalability and reliability.
-   - Optimise deployment to reduce latency by selecting servers close to the WOOX exchange.
+#### c. **HMAC & hashlib**
+- **Purpose**: Securely sign API requests.
+- **Use Cases**:
+  - Generate cryptographic signatures for authenticating WOOX API calls.
 
-4. **Database Integration**:
-   - Implement PostgreSQL to store trade history, backtesting results, and performance logs.
-   - Use Neo4j to map relationships between indicators and trade outcomes.
+#### d. **Dotenv**
+- **Purpose**: Manage sensitive credentials.
+- **Use Cases**:
+  - Load API keys and email credentials from a `.env` file.
 
-5. **TradingView Integration**:
-   - Set up TradingView alerts and webhook integration to enhance signal accuracy.
+#### e. **Requests**
+- **Purpose**: HTTP requests to interact with APIs.
+- **Use Cases**:
+  - Fetch market data.
+  - Execute trades.
 
-6. **Multi-Token Support**:
-   - Expand the bot’s capabilities to analyse and trade multiple tokens simultaneously.
+---
+
+## Architectural Design
+
+### Workflow
+1. **Data Retrieval**:
+   - Fetch historical trade data and candlestick patterns using the WOOX API.
+   - Ensure data consistency through retries and error handling.
+
+2. **Indicator Calculation**:
+   - Apply Stochastic RSI, Slow Stochastic, Supertrend, and MAs to the data.
+   - Align indicators across multiple timeframes for robust trade decisions.
+
+3. **Trade Execution**:
+   - Evaluate entry and exit criteria.
+   - Execute trades via API with a predefined risk cap.
+
+4. **Notifications**:
+   - Send trade execution details via email for transparency.
+
+5. **Logging and Analytics**:
+   - Log trade details for performance evaluation.
+   - Generate visual reports for profit/loss analysis.
+
+---
+
+## Development Milestones
+
+1. **Secure API Integration**:
+   - HMAC-SHA256 signatures ensure secure and authenticated API calls.
+2. **Error Handling**:
+   - Managed API failures with retries and graceful exits.
+3. **Multi-Token Data Retrieval**:
+   - Scaled data collection for 30+ tokens simultaneously.
 
 ---
 
@@ -408,8 +485,25 @@ This step enables the trading bot to:
 4. **Documentation and Testing:**
    - Document the API workflow and write unit tests to ensure code reliability.
 
-5. **Real-Time Trading:**
-   - Develop event-driven mechanisms for real-time market analysis and trade execution.
+5. **Advanced Backtesting**:
+   - Use historical data to simulate and refine trading strategies.
+   - Evaluate win/loss ratios and strategy performance metrics.
+
+6. **Real-Time Trading**:
+   - Transition from historical analysis to live trading using WebSocket integrations.
+
+7. **Machine Learning**:
+   - Introduce trend prediction and volatility analysis models.
+   - Explore reinforcement learning for adaptive strategies.
+
+8. **Scalable Deployment**:
+   - Deploy on Azure with Docker for reliability and low latency.
+
+9. **Database Integration**:
+   - Implement PostgreSQL to store trade history, backtesting results, and performance logs.
+   - Use Neo4j to map relationships between indicators and trade outcomes.
+
+---
 
 ## Conclusion
 
