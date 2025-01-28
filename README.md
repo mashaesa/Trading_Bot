@@ -4,6 +4,8 @@
 
 This project represents my journey in developing an automated trading bot designed to interact with cryptocurrency exchanges through APIs. The bot aims to streamline processes by leveraging Python and the WOOX API to fetch market data, analyse trends, and execute trades automatically. The ultimate goal is to build a scalable, and efficient system capable of supporting algorithmic trading strategies across various markets.
 
+![Blueprint for Trading Bot](https://raw.githubusercontent.com/mashaesa/-Trading_Bot/main/Untitled-2025-01-26-1337.png)
+
 The bot operates based on the following components:
 
 ### Features
