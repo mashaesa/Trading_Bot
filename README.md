@@ -287,7 +287,7 @@ Response Content: {
 2. **Response Content:** The JSON response includes metadata (e.g., total records and pagination) and trade data such as executed price, quantity, and fees.
 3. **Parsed Data:** The parsed table highlights key fields, making it easier to visualise the trade history.
 
-### Significant Milestone: Fetching Data for Multiple Tokens
+### Fetching Data for Multiple Tokens
 
 Building upon the initial functionality, the project has been extended to:
 1. Retrieve historical trade data for multiple cryptocurrency tokens dynamically.
