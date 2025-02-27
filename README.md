@@ -44,11 +44,7 @@ This document provides a deep dive into the data science concepts, programming t
 2. **Indicators & Technical Analysis:**
    - **Candlestick Patterns:** Used as part of trade confirmation.
    - **Stochastic RSI:** Multiple settings for fine-tuned analysis:
-     - K: 3, D: 3, RSI Length: 5, Stochastic Length: 5.
-     - K: 3, D: 3, RSI Length: 8, Stochastic Length: 8.
    - **Slow Stochastics:**
-     - SmoothK: 14, SmoothD: 3.
-     - SmoothK: 8, SmoothD: 3.
    - **Supertrend Indicator:**
      - ATR Period: 11, Source: HL2, ATR Multiplier: 2, Timeframe: Chart.
    - **Moving Averages:**
